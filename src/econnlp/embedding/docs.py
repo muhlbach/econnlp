@@ -44,7 +44,7 @@ class DocumentEmbedder(object):
 
     # -------------------------------------------------------------------------
     # Private functions
-    # -------------------------------------------------------------------------
+    # -------------------------------------------------------------------------    
     #Mean Pooling - Take attention mask into account for correct averaging
     def _mean_pooling(self, model_output, attention_mask):
         """
@@ -345,4 +345,43 @@ class DocumentEmbedder(object):
             
         return embeddings
             
+    def compute_similarity_between_two_embeddings(self,a,b,metric="Lknorm",**kwargs):
+
+        # Sanity check
+        bg.sanity_check.check_type(x=a, allowed_type=str, name="a")
+        bg.sanity_check.check_type(x=b, allowed_type=str, name="b")
+        
+        # Join as list
+        ab = [a,b]
+        
+        # Get embeddings
+        embeddings = self.embed_documents(documents=ab,
+                                          return_embeddings=True,
+                                          return_type="df")
+
+        # Compute similarity
+        similarity = bg.distance.compute_similarity(a=embeddings.loc[a],
+                                                    b=embeddings.loc[b],
+                                                    metric=metric,
+                                                    **kwargs)
+        
+        # Extract
+        similarity = similarity.iloc[0,0]
+        
+        return similarity
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+
+        
 
