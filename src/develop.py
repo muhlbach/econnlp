@@ -6,7 +6,7 @@ This script implements some basic tests of the package that should be run before
 #------------------------------------------------------------------------------
 # import os
 # # Manually set path of current file
-# path_to_here = "/Users/muhlbach/Repositories/autocrosswalk/src/"
+# path_to_here = "/Users/muhlbach/Repositories/econnlp/src/"
 # # Change path
 # os.chdir(path_to_here)
 #------------------------------------------------------------------------------
@@ -16,82 +16,20 @@ This script implements some basic tests of the package that should be run before
 import pandas as pd
 import bodyguard as bg
 
-from autocrosswalk.main import AutoCrosswalk
-from autocrosswalk.tools import load_example_data
+from econnlp.embedding.docs import DocumentEmbedder
 #------------------------------------------------------------------------------
-# SETTINGS
+# DEFAULT EXAMPLE
 #------------------------------------------------------------------------------
-
-#------------------------------------------------------------------------------
-# DEFAULT DATA
-#------------------------------------------------------------------------------
-# Load example data
-data = load_example_data(which_data="default")
-data_from = data.loc[data["DB"]=="db_20_0"]
-data_to = data.loc[data["DB"]=="db_26_1"]
-
-
-
-
 # Instantiate
-self = autocrosswalk = AutoCrosswalk(n_best_match=3,
-                              prioritize_exact_match=True,
-                              enforce_completeness=True,
-                              verbose=2)
+self = documentembedder = DocumentEmbedder(normalize=True,
+                                           verbose=2)
 
-# Generate crosswalk file
-df_crosswalk = autocrosswalk.generate_crosswalk(df_from=data_from,
-                                                df_to=data_to,
-                                                numeric_key=['O*NET-SOC Code'],
-                                                text_key=['Job title'],
-                                                context_key=["Job description"]
-                                                )
-
-# Perform crosswalk
-df_updated = autocrosswalk.perform_crosswalk(crosswalk=df_crosswalk,
-                                             df=data_from,
-                                             values=["Data Value"],
-                                             by=['Date', 'DB',
-                                                 'Category', 'Element ID', 'Element Name','Element description'])
+documentembedder.show_available_models()
 
 
-#------------------------------------------------------------------------------
-# MISSING DATA
-#------------------------------------------------------------------------------
-# Load example data
-data = load_example_data(which_data="missing")
-wage_cols = ["h_mean", "a_mean"]
-data_from = data.loc[~data[wage_cols].isna().any(axis=1)]     
-data_to = data.copy()
-
-# Instantiate
-self = autocrosswalk = AutoCrosswalk(n_best_match=3,
-                              prioritize_exact_match=True,
-                              enforce_completeness=True,
-                              verbose=3)
-
-# Generate crosswalk file
-df_crosswalk = autocrosswalk.generate_crosswalk(df_from=data_from,
-                                                df_to=data_to,
-                                                numeric_key=['occ_code'],
-                                                text_key=['occ_title'])
-
-# Perform crosswalk
-df_updated = autocrosswalk.perform_crosswalk(crosswalk=df_crosswalk,
-                                             df=data_from,
-                                             values=wage_cols)
-
-# Show how to impute missing
-df = autocrosswalk.impute_missing(df=data,
-                                  numeric_key=['occ_code'],
-                                  text_key=['occ_title'],
-                                  values=wage_cols)
-
-
-
-
-
-
-
-
+embeddings = documentembedder.embed_documents(documents=["This is a document embedder",
+                                                         "This is another document embedder",
+                                                         "This is a third document embedder"],
+                                              return_type="df",
+                                              model_name_or_path="all-roberta-large-v1")
 

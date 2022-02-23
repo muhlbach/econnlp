@@ -6,8 +6,6 @@ import os
 import pandas as pd
 import numpy as np
 import bodyguard as bg
-from bg.convert import convert_dict_to_df, convert_df_to_dict
-from bg.distance import normalize_by_norm
 
 # Using SentenceTransformers NLP library
 from sentence_transformers import SentenceTransformer
@@ -266,10 +264,10 @@ class DocumentEmbedder(object):
         # Normalize
         if self.normalize:
             if isinstance(embeddings, dict):             
-                embeddings = {k: normalize_by_norm(x=v,norm="L2") for k,v in embeddings.items()}
+                embeddings = {k: bg.distance.normalize_by_norm(x=v,norm="L2") for k,v in embeddings.items()}
                 
         # Convert to df to change column type              
-        embeddings = convert_dict_to_df(x=embeddings)
+        embeddings = bg.convert.convert_dict_to_df(x=embeddings)
         
         # Enforce columns to be strings
         embeddings.columns = embeddings.columns.astype(str)
@@ -277,7 +275,7 @@ class DocumentEmbedder(object):
         if return_type=="df":
             pass
         elif return_type=="dict":
-            embeddings = convert_df_to_dict(x=embeddings)    
+            embeddings = bg.convert.convert_df_to_dict(x=embeddings)    
         else:
             raise bg.exceptions.WrongInputException(input_name="return_type",
                                                     provided_input=return_type,

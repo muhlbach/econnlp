@@ -1,5 +1,5 @@
 
-# econnlp: An Economist's guide to NLP
+# econnlp: An Econ Approach to NLP
 
 Please contact the authors below if you find any bugs or have any suggestions for improvement. Thank you!
 
