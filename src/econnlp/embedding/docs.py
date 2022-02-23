@@ -28,13 +28,16 @@ class DocumentEmbedder(object):
     def __init__(self,
                  normalize=True,
                  verbose=True,
+                 model_name_or_path="all-roberta-large-v1",
                  ):
         self.normalize = normalize
         self.verbose = verbose
+        self.model_name_or_path = model_name_or_path
         
     # -------------------------------------------------------------------------
     # Class variables
     # -------------------------------------------------------------------------
+    RETURN_TYPE_OPT = ["dict", "df"]
     STR_USING_SAVED_MODEL = "Using saved model: '{0}'"
     STR_DOWNLOADING_MODEL = "Downloading model: '{0}'"    
     STR_DOCUMENTS_NEED_EMBEDDING_INPUT = "Embeddings from model '{0}' needed"
@@ -82,6 +85,30 @@ class DocumentEmbedder(object):
         embeddings = {k:getattr(self, model_name_or_path+"-embeddings")[k] for k in documents}
         
         return embeddings
+
+    def _extract_embedding_by_str(self, embeddings, which_embedding):
+        """
+        Extract specific embeddings by str (key in dict of embeddings)
+        """
+        if not isinstance(embeddings,dict):
+            raise bg.exceptions.WrongInputTypeException(input_name="embeddings",
+                                                        provided_input=embeddings,
+                                                        allowed_inputs=dict)
+
+        if isinstance(which_embedding, str):
+            # Looking for a specific embedding
+            if which_embedding in embeddings:
+                embeddings = embeddings[which_embedding]
+            else:
+                raise Exception(f"Embedding '{which_embedding}' not found in existing embeddings, which include: \n{list(embeddings.keys())}. \nPlease embed!")
+        else:
+            raise bg.exceptions.WrongInputTypeException(input_name="which_embedding",
+                                                        provided_input=which_embedding,
+                                                        allowed_inputs=str)
+        
+        return embeddings
+
+
 
 
     def _embed_documents(self,
@@ -233,33 +260,25 @@ class DocumentEmbedder(object):
                                                      "average_word_embeddings_glove.6B.300d",
                                                      ]
         
-        print(f"""As of out {DATE_LAST_UPDATED}, these models are available through SentenceTransformers:
-              
-              {AVAILABLE_MODELS_VIA_SENTENCETRANSFORMERS}
-              """
-              )
-        return AVAILABLE_MODELS_VIA_SENTENCETRANSFORMERS
-
+        bg.tools.print2(f"""As of out {DATE_LAST_UPDATED}, these models are available through SentenceTransformers: \n\n {AVAILABLE_MODELS_VIA_SENTENCETRANSFORMERS}""")
 
     def embed_documents(self,
                         documents,
-                        return_type="df",
-                        model_name_or_path="all-roberta-large-v1"):
-        RETURN_TYPE_OPT = ["dict", "df"]
-        
+                        return_embeddings=True,
+                        return_type="df"):        
         # Check documents
         if isinstance(documents, list):
             pass
         elif isinstance(documents, str):
             documents = [documents]
         else:
-            raise bg.exceptions.WrongInputException(input_name="documents",
-                                                    provided_input=documents,
-                                                    allowed_inputs=["str", "list"])
+            raise bg.exceptions.WrongInputTypeException(input_name="documents",
+                                                        provided_input=documents,
+                                                        allowed_inputs=[str, list])
             
         # Embed documents
         embeddings = self._embed_documents(documents=documents,
-                                           model_name_or_path=model_name_or_path)
+                                           model_name_or_path=self.model_name_or_path)
                     
         # Normalize
         if self.normalize:
@@ -279,11 +298,51 @@ class DocumentEmbedder(object):
         else:
             raise bg.exceptions.WrongInputException(input_name="return_type",
                                                     provided_input=return_type,
-                                                    allowed_inputs=RETURN_TYPE_OPT)
+                                                    allowed_inputs=self.RETURN_TYPE_OPT)
         
-        return embeddings
+        if return_embeddings:
+            return embeddings
     
+    def extract_embeddings(self,which_embeddings="all",return_type="df"):
+        
+        # Extract all existing embeddings
+        embeddings = getattr(self, self.model_name_or_path+"-embeddings")
 
+        if which_embeddings=="all":
+            pass
+        elif isinstance(which_embeddings, str):
+            
+            embeddings = {which_embeddings: self._extract_embedding_by_str(embeddings=embeddings,
+                                                                           which_embedding=which_embeddings)
+                          }
+            
+        elif isinstance(which_embeddings, list):
+            
+            # Pre-allocate
+            embeddings_temp = {}
 
-
+            # Exact all individual embeddings
+            for s in which_embeddings:                
+                embeddings_temp[s] = self._extract_embedding_by_str(embeddings=embeddings,
+                                                                    which_embedding=s)  
+                
+            # Overwrite
+            embeddings = embeddings_temp
+                
+        else:
+            raise bg.exceptions.WrongInputTypeException(input_name="which_embeddings",
+                                                        provided_input=which_embeddings,
+                                                        allowed_inputs=["all", str, list])
+                
+        if return_type=="df":
+            embeddings = bg.convert.convert_dict_to_df(x=embeddings)
+        elif return_type=="dict":
+            pass
+        else:
+            raise bg.exceptions.WrongInputException(input_name="return_type",
+                                                    provided_input=return_type,
+                                                    allowed_inputs=self.RETURN_TYPE_OPT)
+            
+        return embeddings
+            
 
