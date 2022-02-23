@@ -6,6 +6,8 @@ import os
 import pandas as pd
 import numpy as np
 import bodyguard as bg
+from bg.convert import convert_dict_to_df, convert_df_to_dict
+from bg.distance import normalize_by_norm
 
 # Using SentenceTransformers NLP library
 from sentence_transformers import SentenceTransformer
@@ -13,10 +15,6 @@ from sentence_transformers import SentenceTransformer
 # Using HuggingFace NLP library
 from transformers import AutoTokenizer, AutoModel
 import torch
-
-# From this library
-from ..utils.convert import convert_dict_to_df, convert_df_to_dict
-from ..utils.distance import normalize_by_norm
 #------------------------------------------------------------------------------
 # Main
 #------------------------------------------------------------------------------
