@@ -37,6 +37,7 @@ class DocumentEmbedder(object):
     # -------------------------------------------------------------------------
     # Class variables
     # -------------------------------------------------------------------------
+    MAX_SQN_LENGTH = 256
     RETURN_TYPE_OPT = ["dict", "df"]
     STR_USING_SAVED_MODEL = "Using saved model: '{0}'"
     STR_DOWNLOADING_MODEL = "Downloading model: '{0}'"    
@@ -54,8 +55,9 @@ class DocumentEmbedder(object):
         input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
         sum_embeddings = torch.sum(token_embeddings * input_mask_expanded, 1)
         sum_mask = torch.clamp(input_mask_expanded.sum(1), min=1e-9)
+        mean_embeddings = sum_embeddings / sum_mask
     
-        return sum_embeddings / sum_mask
+        return mean_embeddings
 
     def _check_embeddings_existence(self, documents, model_name_or_path):
         """Check which documents that need to be embeddings versus which documents that have already been embedded"""
@@ -90,30 +92,27 @@ class DocumentEmbedder(object):
         """
         Extract specific embeddings by str (key in dict of embeddings)
         """
-        if not isinstance(embeddings,dict):
-            raise bg.exceptions.WrongInputTypeException(input_name="embeddings",
-                                                        provided_input=embeddings,
-                                                        allowed_inputs=dict)
+        # Sanity check inputs
+        bg.sanity_check.check_type(x=embeddings,
+                                   allowed=dict,
+                                   name="embeddings")
 
-        if isinstance(which_embedding, str):
-            # Looking for a specific embedding
-            if which_embedding in embeddings:
-                embeddings = embeddings[which_embedding]
-            else:
-                raise Exception(f"Embedding '{which_embedding}' not found in existing embeddings, which include: \n{list(embeddings.keys())}. \nPlease embed!")
+        bg.sanity_check.check_type(x=which_embedding,
+                                   allowed=str,
+                                   name="which_embedding")
+    
+        # Looking for a specific embedding
+        if which_embedding in embeddings:
+            embeddings = embeddings[which_embedding]
         else:
-            raise bg.exceptions.WrongInputTypeException(input_name="which_embedding",
-                                                        provided_input=which_embedding,
-                                                        allowed_inputs=str)
+            raise Exception(f"Embedding '{which_embedding}' not found in existing embeddings, which include: \n{list(embeddings.keys())}. \nPlease embed!")
         
         return embeddings
-
-
-
 
     def _embed_documents(self,
                          documents,
                          model_name_or_path="all-roberta-large-v1"):
+                
         # ---------------------------------------------------------------------
         # Check documents have been embedded before
         # ---------------------------------------------------------------------
@@ -159,14 +158,11 @@ class DocumentEmbedder(object):
                 
             # -----------------------------------------------------------------
             # Embed
-            # -----------------------------------------------------------------
-            # Maximum sentence length
-            max_seq_length = max([256, max([len(d.split()) for d in documents_not_embedded])])    
-            
+            # -----------------------------------------------------------------            
             if self.loaded_via=="SentenceTransformer":
                             
                 # Update maximum sequence length
-                pretrained_model.max_seq_length = max([pretrained_model.max_seq_length, max_seq_length])            
+                pretrained_model.max_seq_length = self.MAX_SQN_LENGTH
     
                 # Construct embedding
                 raw_embeddings = pretrained_model.encode(documents_not_embedded,
@@ -184,7 +180,7 @@ class DocumentEmbedder(object):
                 encoded_input = tokenizer(text=documents_not_embedded,
                                           padding=True,
                                           truncation=True,
-                                          max_length=max_seq_length,
+                                          max_length=self.MAX_SQN_LENGTH,
                                           return_tensors='pt')
             
                 # Compute token embeddings
@@ -192,7 +188,8 @@ class DocumentEmbedder(object):
                     model_output = pretrained_model(**encoded_input)
             
                 # Perform pooling (here, mean pooling)
-                raw_embeddings = self._mean_pooling(model_output=model_output, attention_mask=encoded_input['attention_mask'])                
+                raw_embeddings = self._mean_pooling(model_output=model_output,
+                                                    attention_mask=encoded_input['attention_mask'])                
     
                 # Convert tensor to numpy array
                 raw_embeddings = raw_embeddings.numpy()
@@ -200,7 +197,6 @@ class DocumentEmbedder(object):
             # -----------------------------------------------------------------
             # Finalize
             # -----------------------------------------------------------------
-                    
             # Pre-allocate
             embeddings = {}
             
@@ -211,7 +207,6 @@ class DocumentEmbedder(object):
             setattr(self, model_name_or_path+"-embeddings", {**getattr(self, model_name_or_path+"-embeddings"),
                                                              **embeddings}
                     )            
-            
             
         # Extract embeddings
         embeddings_out = self._extract_existing_embeddings(documents=documents,
@@ -265,17 +260,24 @@ class DocumentEmbedder(object):
     def embed_documents(self,
                         documents,
                         return_embeddings=True,
-                        return_type="df"):        
-        # Check documents
-        if isinstance(documents, list):
-            pass
-        elif isinstance(documents, str):
+                        return_type="df"): 
+        """
+        Embed documents as vectors
+        """
+        # Check types
+        bg.sanity_check.check_type(x=documents,
+                                   allowed=(list,str),
+                                   name="documents")
+        
+        # Convert to list if str
+        if isinstance(documents, str):
             documents = [documents]
-        else:
-            raise bg.exceptions.WrongInputTypeException(input_name="documents",
-                                                        provided_input=documents,
-                                                        allowed_inputs=[str, list])
-            
+        
+        # Check inputs
+        bg.sanity_check.check_str(x=return_type,
+                                  allowed=self.RETURN_TYPE_OPT,
+                                  name="return_type")
+                        
         # Embed documents
         embeddings = self._embed_documents(documents=documents,
                                            model_name_or_path=self.model_name_or_path)
@@ -291,24 +293,28 @@ class DocumentEmbedder(object):
         # Enforce columns to be strings
         embeddings.columns = embeddings.columns.astype(str)
                 
-        if return_type=="df":
-            pass
-        elif return_type=="dict":
+        if return_type=="dict":
             embeddings = bg.convert.convert_df_to_dict(x=embeddings)    
-        else:
-            raise bg.exceptions.WrongInputException(input_name="return_type",
-                                                    provided_input=return_type,
-                                                    allowed_inputs=self.RETURN_TYPE_OPT)
         
         if return_embeddings:
             return embeddings
     
-    def extract_embeddings(self,which_embeddings="all",return_type="df"):
+    def extract_embeddings(self,embeddings=None,which_embeddings="all",return_type="df"):
         
-        # Extract all existing embeddings
-        embeddings = getattr(self, self.model_name_or_path+"-embeddings")
+        if embeddings is None:
+            # Extract all existing embeddings
+            embeddings = getattr(self, self.model_name_or_path+"-embeddings")
+
+        bg.sanity_check.check_type(x=embeddings,
+                                   allowed=dict,
+                                   name="embeddings")
+        
+        bg.sanity_check.check_type(x=which_embeddings,
+                                   allowed=(str,list),
+                                   name="which_embeddings")
 
         if which_embeddings=="all":
+            # Return all embeddings
             pass
         elif isinstance(which_embeddings, str):
             
@@ -328,28 +334,17 @@ class DocumentEmbedder(object):
                 
             # Overwrite
             embeddings = embeddings_temp
-                
-        else:
-            raise bg.exceptions.WrongInputTypeException(input_name="which_embeddings",
-                                                        provided_input=which_embeddings,
-                                                        allowed_inputs=["all", str, list])
-                
+                                
         if return_type=="df":
             embeddings = bg.convert.convert_dict_to_df(x=embeddings)
-        elif return_type=="dict":
-            pass
-        else:
-            raise bg.exceptions.WrongInputException(input_name="return_type",
-                                                    provided_input=return_type,
-                                                    allowed_inputs=self.RETURN_TYPE_OPT)
             
         return embeddings
             
     def compute_similarity_between_two_embeddings(self,a,b,metric="Lknorm",**kwargs):
 
         # Sanity check
-        bg.sanity_check.check_type(x=a, allowed_type=str, name="a")
-        bg.sanity_check.check_type(x=b, allowed_type=str, name="b")
+        bg.sanity_check.check_type(x=a, allowed=str, name="a")
+        bg.sanity_check.check_type(x=b, allowed=str, name="b")
         
         # Join as list
         ab = [a,b]
@@ -369,19 +364,39 @@ class DocumentEmbedder(object):
         similarity = similarity.iloc[0,0]
         
         return similarity
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
+                
+    def compute_similarity(self,a,b,metric="Lknorm",**kwargs):
 
+        # Sanity check
+        bg.sanity_check.check_type(x=a, allowed=(str,list), name="a")
+        bg.sanity_check.check_type(x=b, allowed=(str,list), name="b")
         
+        # Convert to list if str
+        if isinstance(a,str):
+            a = [a]
+        if isinstance(b,str):
+            b = [b]        
+        
+        # Join as list
+        ab = a+b
+        
+        # Get embeddings
+        embeddings = self.embed_documents(documents=ab,
+                                          return_embeddings=True,
+                                          return_type="dict")
+        
+        a_embeddings = self.extract_embeddings(embeddings=embeddings,
+                                               which_embeddings=a,
+                                               return_type="df")
 
+        b_embeddings = self.extract_embeddings(embeddings=embeddings,
+                                               which_embeddings=b,
+                                               return_type="df")        
+
+        # Compute similarity
+        similarity = bg.distance.compute_similarity(a=a_embeddings,
+                                                    b=b_embeddings,
+                                                    metric=metric,
+                                                    **kwargs)
+        
+        return similarity

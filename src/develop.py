@@ -33,3 +33,6 @@ embeddings = documentembedder.embed_documents(documents=["This is a document emb
                                               return_type="df",
                                               model_name_or_path="all-roberta-large-v1")
 
+documentembedder.compute_similarity(a=["This is dull"],
+                                    b=["This is fun"],
+                                    metric="cosine")
