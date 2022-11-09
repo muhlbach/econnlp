@@ -217,43 +217,55 @@ class DocumentEmbedder(object):
     # Public functions
     # -------------------------------------------------------------------------
     def show_available_models(self):
-        """Print available models via SentenceTransformers"""
+        """Print available models via SentenceTransformers
+        See https://www.sbert.net/docs/pretrained_models.html        
+        """
         
         # Last last updated
-        DATE_LAST_UPDATED = "February 3, 2022"
+        DATE_LAST_UPDATED = "June 21, 2022"
         
         # Models
-        AVAILABLE_MODELS_VIA_SENTENCETRANSFORMERS = ["all-roberta-large-v1",
-                                                     "all-mpnet-base-v1",
-                                                     "all-mpnet-base-v2"
-                                                     "all-MiniLM-L12-v1",
-                                                     "all-distilroberta-v1",
-                                                     "all-MiniLM-L12-v2",
-                                                     "all-MiniLM-L6-v2",
-                                                     "all-MiniLM-L6-v1",
-                                                     "paraphrase-mpnet-base-v2",
-                                                     "multi-qa-mpnet-base-dot-v1",
-                                                     "multi-qa-distilbert-dot-v1",
-                                                     "multi-qa-mpnet-base-cos-v1",
-                                                     "paraphrase-distilroberta-base-v2",
-                                                     "paraphrase-TinyBERT-L6-v2",
-                                                     "paraphrase-MiniLM-L12-v2",
-                                                     "multi-qa-distilbert-cos-v1",
-                                                     "paraphrase-multilingual-mpnet-base-v2",
-                                                     "paraphrase-MiniLM-L6-v2",
-                                                     "paraphrase-albert-small-v2",
-                                                     "multi-qa-MiniLM-L6-cos-v1",
-                                                     "paraphrase-multilingual-MiniLM-L12-v2",
-                                                     "multi-qa-MiniLM-L6-dot-v1",
-                                                     "msmarco-bert-base-dot-v5",
-                                                     "msmarco-distilbert-base-tas-b",
-                                                     "paraphrase-MiniLM-L3-v2",
-                                                     "msmarco-distilbert-dot-v5",
-                                                     "distiluse-base-multilingual-cased-v1",
-                                                     "distiluse-base-multilingual-cased-v2",
-                                                     "average_word_embeddings_komninos",
-                                                     "average_word_embeddings_glove.6B.300d",
-                                                     ]
+        AVAILABLE_MODELS_VIA_SENTENCETRANSFORMERS = [            
+            "sentence-t5-xxl",
+            "gtr-t5-xxl" ,
+            "all-roberta-large-v1",
+            "all-mpnet-base-v1",
+            "gtr-t5-large",
+            "gtr-t5-xl",
+            "all-mpnet-base-v2",
+            "sentence-t5-xl",
+            "all-MiniLM-L12-v1",
+            "sentence-t5-large",
+            "all-distilroberta-v1",
+            "all-MiniLM-L12-v2",
+            "all-MiniLM-L6-v2",
+            "all-MiniLM-L6-v1",
+            "paraphrase-mpnet-base-v2",
+            "sentence-t5-base",
+            "gtr-t5-base",
+            "multi-qa-mpnet-base-dot-v1",
+            "multi-qa-distilbert-dot-v1",
+            "multi-qa-mpnet-base-cos-v1",
+            "paraphrase-distilroberta-base-v2",
+            "paraphrase-TinyBERT-L6-v2",
+            "paraphrase-MiniLM-L12-v2",
+            "multi-qa-distilbert-cos-v1",
+            "paraphrase-multilingual-mpnet-base-v2",
+            "paraphrase-MiniLM-L6-v2",
+            "paraphrase-albert-small-v2",
+            "multi-qa-MiniLM-L6-cos-v1",
+            "paraphrase-multilingual-MiniLM-L12-v2",
+            "multi-qa-MiniLM-L6-dot-v1",
+            "msmarco-bert-base-dot-v5",
+            "msmarco-distilbert-base-tas-b",
+            "paraphrase-MiniLM-L3-v2",
+            "msmarco-distilbert-dot-v5",
+            "distiluse-base-multilingual-cased-v1",
+            "distiluse-base-multilingual-cased-v2",
+            "average_word_embeddings_komninos",
+            "average_word_embeddings_glove.6B.300d",
+            ]
+             
         
         bg.tools.print2(f"""As of out {DATE_LAST_UPDATED}, these models are available through SentenceTransformers: \n\n {AVAILABLE_MODELS_VIA_SENTENCETRANSFORMERS}""")
 
