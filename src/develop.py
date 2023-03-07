@@ -17,10 +17,32 @@ import pandas as pd
 import bodyguard as bg
 import scipy
 import statsmodels
-print(scipy.__version__)
-print(statsmodels.__version__)
 
 from econnlp.embedding.docs import DocumentEmbedder
+from econnlp.comparing.compare import Comparer
+#------------------------------------------------------------------------------
+# COMPARE
+#------------------------------------------------------------------------------
+self = comparer = Comparer()
+
+list_a = ["ALUMINIUM", "CHEMICALS", "POLYMER"]
+list_b = ["Aluminium", "Chemical", "Polymers"]
+
+comparer.find_n_matches(
+    from_entry=list_a,
+    to_entry=list_b,
+    n_matches=5,
+    )
+
+comparer.find_best_match(
+    from_entry=list_a,
+    to_entry=list_b,
+    return_type="df",
+    strip=True,
+    )
+
+
+
 #------------------------------------------------------------------------------
 # DEFAULT EXAMPLE
 #------------------------------------------------------------------------------

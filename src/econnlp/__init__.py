@@ -3,5 +3,11 @@
 """
 __init__
 """
-from econnlp import (embedding)
-__all__ = [embedding]
+from econnlp import (
+    embedding,
+    comparing,
+    )
+__all__ = [
+    embedding,
+    comparing,
+    ]
