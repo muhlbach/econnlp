@@ -76,6 +76,8 @@ class Comparer(object):
                                           value_name=self.SIMIL,
                                           ignore_index=False).reset_index().rename(columns={"index":self.FROM_NAME})
         
+        similarity_long.sort_values(by=[self.FROM_NAME], inplace=True)
+
 
         similarity_long[self.RANK] = similarity_long.groupby(by=[self.FROM_NAME])[self.SIMIL].rank(method="average",
                                                                                                    ascending=False)

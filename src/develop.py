@@ -23,10 +23,15 @@ from econnlp.comparing.compare import Comparer
 #------------------------------------------------------------------------------
 # COMPARE
 #------------------------------------------------------------------------------
-self = comparer = Comparer()
+# "princeton-nlp/sup-simcse-roberta-large"
+# "YuxinJiang/sup-promcse-roberta-large"
+# "all-roberta-large-v1"
 
-list_a = ["ALUMINIUM", "CHEMICALS", "POLYMER"]
-list_b = ["Aluminium", "Chemical", "Polymers"]
+comparer = Comparer(model_name_or_path="YuxinJiang/sup-promcse-roberta-large")
+
+
+list_a = ["ALUMINIUM", "CHEMICALS", "POLYMER", "STEEL"]
+list_b = ["Aluminium", "Chemical", "Polymers", "Iron", "Cast Iron", "Steel - Hot rolled"]
 
 comparer.find_n_matches(
     from_entry=list_a,
@@ -42,14 +47,13 @@ comparer.find_best_match(
     )
 
 
-
 #------------------------------------------------------------------------------
 # DEFAULT EXAMPLE
 #------------------------------------------------------------------------------
 # Instantiate
-self = documentembedder = DocumentEmbedder(normalize=True,
-                                           verbose=2,
-                                           model_name_or_path="all-roberta-large-v1")
+documentembedder = DocumentEmbedder(normalize=True,
+                                    verbose=2,
+                                    model_name_or_path="all-roberta-large-v1")
 
 documentembedder.show_available_models()
 
